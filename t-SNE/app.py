@@ -1,11 +1,7 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-import os
 
-from src.data_preprocessing import load_data
-from src.feature_engineering import prepare_features
 from src.predict import predict_new_data
 
 st.set_page_config(page_title="t-SNE Dimensionality Reduction", layout="wide", initial_sidebar_state="collapsed")
@@ -21,7 +17,6 @@ st.markdown("""
     .accent { color: var(--primary-color); }
     .subtext { opacity: 0.7; font-size: 1.1rem; }
     .microtext { opacity: 0.5; font-size: 0.9rem; }
-    .desc { opacity: 0.8; padding: 0 30px; font-size: 1.05rem; line-height: 1.6; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -29,18 +24,13 @@ st.markdown("<h1 style='text-align: center; font-weight: normal; font-size: 3rem
 st.markdown("<p class='subtext' style='text-align: center; margin-top: 10px;'>Map multi-dimensional retail metrics into a non-linear local neighborhood space.</p>", unsafe_allow_html=True)
 st.markdown("<br><br>", unsafe_allow_html=True)
 
-df = load_data()
-X_scaled, scaler, feature_cols = prepare_features(df)
-
-if not os.path.exists('models/tsne_knn_model.pkl'):
-    from src.train_model import train
-    model = train(X_scaled)
-    joblib.dump(scaler, 'models/scaler.pkl')
-    joblib.dump(feature_cols, 'models/feature_cols.pkl')
-else:
+try:
     model = joblib.load('models/tsne_knn_model.pkl')
     scaler = joblib.load('models/scaler.pkl')
     feature_cols = joblib.load('models/feature_cols.pkl')
+except FileNotFoundError:
+    st.error("Production models not found. Please ensure your .pkl files are uploaded to the models/ directory.")
+    st.stop()
 
 col1, col2 = st.columns(2, gap="large")
 
@@ -50,10 +40,10 @@ with col1:
         st.divider()
         
         with st.form("tsne_form"):
-            price = st.number_input('Product Price (mehsul_qiymeti)', min_value=0.0, value=15.50, step=1.0)
-            bonus = st.selectbox('Bonus Card Used (bonus_kart)', ['True', 'False'])
-            lat = st.number_input('Store Latitude (magaza_lat)', min_value=0.0, max_value=90.0, value=40.48556, step=0.0100, format="%.5f")
-            lon = st.number_input('Store Longitude (magaza_lon)', min_value=0.0, max_value=180.0, value=49.94674, step=0.0100, format="%.5f")
+            price = st.number_input('Product Price', min_value=0.0, value=15.50, step=1.0)
+            bonus = st.selectbox('Bonus Card Used', ['True', 'False'])
+            lat = st.number_input('Store Latitude', min_value=0.0, max_value=90.0, value=40.48556, step=0.0100, format="%.5f")
+            lon = st.number_input('Store Longitude', min_value=0.0, max_value=180.0, value=49.94674, step=0.0100, format="%.5f")
             
             st.markdown("<br>", unsafe_allow_html=True)
             predict_btn = st.form_submit_button("RUN t-SNE MAPPING", use_container_width=True)
